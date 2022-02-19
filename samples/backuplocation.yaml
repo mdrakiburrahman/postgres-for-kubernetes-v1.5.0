@@ -1,0 +1,27 @@
+# https://docs.vmware.com/en/VMware-Tanzu-SQL-with-Postgres-for-Kubernetes/1.4/tanzu-postgres-k8s/GUID-backup-restore.html
+---
+apiVersion: sql.tanzu.vmware.com/v1
+kind: PostgresBackupLocation
+metadata:
+  name: backuplocation-sample
+spec:
+  storage:
+    s3:
+      bucket: "name-of-bucket"
+      bucketPath: "/my-bucket-path"
+      region: "us-east-1"
+      endpoint: "custom-endpoint"
+      forcePathStyle: false
+      enableSSL: true
+      secret:
+        name: backuplocation-creds-sample
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backuplocation-creds-sample
+type: generic
+stringData:
+  accessKeyId: "my-access-key-id"
+  secretAccessKey: "my-secret-access-key"
