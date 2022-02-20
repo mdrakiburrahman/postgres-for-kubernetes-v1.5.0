@@ -1,0 +1,22 @@
+apiVersion: sql.tanzu.vmware.com/v1
+kind: PostgresBackupLocation
+metadata:
+  name: minio-s3
+spec:
+  storage:
+    s3:
+      bucket: "postgres"
+      endpoint: "https://10.152.183.172:9000"
+      forcePathStyle: false
+      enableSSL: true
+      secret:
+        name: minio-s3-creds
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-s3-creds
+type: generic
+stringData:
+  accessKeyId: "boor"
+  secretAccessKey: "acntorPRESTO!"

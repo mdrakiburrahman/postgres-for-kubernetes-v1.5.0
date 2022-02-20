@@ -1,0 +1,39 @@
+apiVersion: sql.tanzu.vmware.com/v1
+kind: Postgres
+metadata:
+  name: postgres-sample
+spec:
+  storageClassName: microk8s-hostpath
+  storageSize: 5G
+  cpu: "1"
+  memory: 2G
+  monitorStorageClassName: microk8s-hostpath
+  monitorStorageSize: 1G
+  resources:
+    monitor:
+      limits:
+        cpu: 2000m
+        memory: 2000Mi
+      requests:
+        cpu: 2000m
+        memory: 2000Mi
+    metrics:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+  pgConfig:
+    dbname: postgres-sample
+    username: pgadmin
+    appUser: pgappuser
+  postgresVersion:
+    name: postgres-14 # View available versions with `kubectl get postgresversion`
+  serviceType: LoadBalancer
+#  highAvailability:
+#    enabled: true
+  logLevel: Debug
+  backupLocation:
+    name: minio-s3
+  # certificateSecretName:

@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cni.projectcalico.org/podIP: 10.1.254.79/32
+    cni.projectcalico.org/podIPs: 10.1.254.79/32
+    seccomp.security.alpha.kubernetes.io/pod: runtime/default
+  creationTimestamp: "2022-02-19T18:09:55Z"
+  generateName: postgres-operator-7dbb479fcb-
+  labels:
+    app: postgres-operator
+    pod-template-hash: 7dbb479fcb
+  name: postgres-operator-7dbb479fcb-vzbhs
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: ReplicaSet
+    name: postgres-operator-7dbb479fcb
+    uid: ad866076-5f2d-4b28-9b20-709db7b38d82
+  resourceVersion: "43532"
+  selfLink: /api/v1/namespaces/default/pods/postgres-operator-7dbb479fcb-vzbhs
+  uid: 544a4044-0fef-4f4b-a91b-51efbab34056
+spec:
+  containers:
+  - command:
+    - /manager
+    env:
+    - name: POSTGRES_IMAGE
+      value: mdrrakiburrahman/postgres-instance:v1.5.0
+    - name: DOCKER_REGISTRY_SECRET_NAME
+      value: regsecret
+    image: mdrrakiburrahman/postgres-operator:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: postgres-operator
+    ports:
+    - containerPort: 9443
+      name: webhook-server
+      protocol: TCP
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /readyz
+        port: 8081
+        scheme: HTTP
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+    resources: {}
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /tmp/postgres-operator-webhook-server-cert-secret
+      name: postgres-operator-webhook-server-cert-secret
+      readOnly: true
+    - mountPath: /config.yaml
+      name: manager-config
+      subPath: controller_manager_config.yaml
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-operator-service-account-token-xw8g6
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  imagePullSecrets:
+  - name: regsecret
+  nodeName: microk8s-vm
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  serviceAccount: postgres-operator-service-account
+  serviceAccountName: postgres-operator-service-account
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: postgres-operator-webhook-server-cert-secret
+    secret:
+      defaultMode: 420
+      secretName: postgres-operator-webhook-server-cert
+  - configMap:
+      defaultMode: 420
+      name: postgres-operator-config
+    name: manager-config
+  - name: postgres-operator-service-account-token-xw8g6
+    secret:
+      defaultMode: 420
+      secretName: postgres-operator-service-account-token-xw8g6
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:09:55Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:10:06Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:10:06Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:09:55Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://8274d74eb05fd4ba6184364f5cad88212ad738c577150f8351ace137df896abc
+    image: docker.io/mdrrakiburrahman/postgres-operator:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-operator@sha256:775eb2e6ff081b95e029a362506538a122ff5fb1beac67828bbf1e21e835179e
+    lastState: {}
+    name: postgres-operator
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:09:56Z"
+  hostIP: 172.17.106.143
+  phase: Running
+  podIP: 10.1.254.79
+  podIPs:
+  - ip: 10.1.254.79
+  qosClass: BestEffort
+  startTime: "2022-02-19T18:09:55Z"

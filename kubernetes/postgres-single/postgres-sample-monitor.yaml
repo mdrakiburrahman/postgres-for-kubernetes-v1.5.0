@@ -1,0 +1,369 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cni.projectcalico.org/podIP: 10.1.254.80/32
+    cni.projectcalico.org/podIPs: 10.1.254.80/32
+    seccomp.security.alpha.kubernetes.io/pod: runtime/default
+  creationTimestamp: "2022-02-19T18:11:12Z"
+  generateName: postgres-sample-monitor-
+  labels:
+    app: postgres
+    controller-revision-hash: postgres-sample-monitor-d4f8cc687
+    headless-service: postgres-sample
+    monitor-instance: postgres-sample-monitor
+    postgres-instance: postgres-sample
+    statefulset.kubernetes.io/pod-name: postgres-sample-monitor-0
+    type: monitor
+  name: postgres-sample-monitor-0
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: postgres-sample-monitor
+    uid: e8634620-af6e-4df4-ac4d-b6e714313f39
+  resourceVersion: "43875"
+  selfLink: /api/v1/namespaces/default/pods/postgres-sample-monitor-0
+  uid: ad9023f6-a9ec-4d84-a4c2-2ce067b9d6e2
+spec:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: type
+              operator: In
+              values:
+              - data
+              - monitor
+            - key: postgres-instance
+              operator: In
+              values:
+              - postgres-sample
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  containers:
+  - args:
+    - /usr/local/apps/start_monitor
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: PGSSLROOTCERT
+      value: /etc/postgres_ssl/ca.crt
+    - name: PGSSLMODE
+      value: verify-ca
+    - name: VERBOSITY
+      value: -vvv
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - /usr/local/apps/shutdown
+    name: monitor
+    readinessProbe:
+      exec:
+        command:
+        - bash
+        - -c
+        - psql -U postgres -d postgres -c 'select version()'
+      failureThreshold: 45
+      periodSeconds: 1
+      successThreshold: 2
+      timeoutSeconds: 10
+    resources:
+      limits:
+        cpu: 1200m
+        memory: 1200Mi
+      requests:
+        cpu: 1200m
+        memory: 1200Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-monitor
+    - mountPath: /etc/pgautofailover
+      name: monitor-secret-volume
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-token-x26dr
+      readOnly: true
+  - args:
+    - /usr/local/apps/display_logs
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: monitor-logging
+    resources:
+      limits:
+        cpu: 200m
+        memory: 200Mi
+      requests:
+        cpu: 200m
+        memory: 200Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-monitor
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-token-x26dr
+      readOnly: true
+  - args:
+    - /usr/local/apps/reconfigure_monitor
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: reconfigure-monitor
+    resources:
+      limits:
+        cpu: 200m
+        memory: 200Mi
+      requests:
+        cpu: 200m
+        memory: 200Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-monitor
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-token-x26dr
+      readOnly: true
+  - args:
+    - /usr/local/apps/run_role_checker
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: CURRENT_NAMESPACE
+      value: default
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: check-roles
+    resources:
+      limits:
+        cpu: 400m
+        memory: 400Mi
+      requests:
+        cpu: 400m
+        memory: 400Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-monitor
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-token-x26dr
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  hostname: postgres-sample-monitor-0
+  imagePullSecrets:
+  - name: regsecret
+  initContainers:
+  - args:
+    - /usr/local/apps/create_monitor
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: VERBOSITY
+      value: -vvv
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: create-monitor
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2000Mi
+      requests:
+        cpu: "2"
+        memory: 2000Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-monitor
+    - mountPath: /etc/pgautofailover
+      name: monitor-secret-volume
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-token-x26dr
+      readOnly: true
+  nodeName: microk8s-vm
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    fsGroup: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+    runAsUser: 1001
+    seccompProfile:
+      type: RuntimeDefault
+  serviceAccount: postgres-sample
+  serviceAccountName: postgres-sample
+  shareProcessNamespace: true
+  subdomain: postgres-sample-agent
+  terminationGracePeriodSeconds: 900
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: postgres-sample-monitor
+    persistentVolumeClaim:
+      claimName: postgres-sample-monitor-postgres-sample-monitor-0
+  - name: monitor-secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-monitor-secret
+  - name: internal-ssl-secret-volume
+    secret:
+      defaultMode: 256
+      secretName: postgres-sample-internal-ssl-secret
+  - name: postgres-sample-token-x26dr
+    secret:
+      defaultMode: 420
+      secretName: postgres-sample-token-x26dr
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:23Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:26Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:26Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:20Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://675a72a40d71434d44fe26fcff0a36c7347f1bf7b98bb31c298083f049a413f0
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: check-roles
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:24Z"
+  - containerID: containerd://05e37bcb1ada39fc68930e3e8e027f1d581e64dc4f4916d21249c3a4a7b95e72
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: monitor
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:23Z"
+  - containerID: containerd://09a5b567b8728584455ccbbf72ec096a19beafc7ba3d3e3e7624fa143f40beab
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: monitor-logging
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:23Z"
+  - containerID: containerd://816054de2d50f2d306873b4b97e7213674302c047824471f38a751865961588c
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: reconfigure-monitor
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:24Z"
+  hostIP: 172.17.106.143
+  initContainerStatuses:
+  - containerID: containerd://2adf67b6389f93cbf6ece3b86a4bf784bf6e42613215104ca1db315efe56021d
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: create-monitor
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: containerd://2adf67b6389f93cbf6ece3b86a4bf784bf6e42613215104ca1db315efe56021d
+        exitCode: 0
+        finishedAt: "2022-02-19T18:11:22Z"
+        reason: Completed
+        startedAt: "2022-02-19T18:11:21Z"
+  phase: Running
+  podIP: 10.1.254.80
+  podIPs:
+  - ip: 10.1.254.80
+  qosClass: Guaranteed
+  startTime: "2022-02-19T18:11:20Z"

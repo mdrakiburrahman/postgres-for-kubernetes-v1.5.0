@@ -1,0 +1,551 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cni.projectcalico.org/podIP: 10.1.254.81/32
+    cni.projectcalico.org/podIPs: 10.1.254.81/32
+    prometheus.io/port: "9187"
+    prometheus.io/scheme: https
+    prometheus.io/scrape: "true"
+    seccomp.security.alpha.kubernetes.io/pod: runtime/default
+  creationTimestamp: "2022-02-19T18:11:26Z"
+  generateName: postgres-sample-
+  labels:
+    app: postgres
+    controller-revision-hash: postgres-sample-bcd7655bf
+    headless-service: postgres-sample
+    postgres-instance: postgres-sample
+    role: read-write
+    statefulset.kubernetes.io/pod-name: postgres-sample-0
+    type: data
+  name: postgres-sample-0
+  namespace: default
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: StatefulSet
+    name: postgres-sample
+    uid: 4d639e44-1dc2-4d11-b15d-2471296598a3
+  resourceVersion: "43962"
+  selfLink: /api/v1/namespaces/default/pods/postgres-sample-0
+  uid: 1bc06f04-c7ee-4928-908d-7ab44d2c56b4
+spec:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: type
+              operator: In
+              values:
+              - data
+              - monitor
+            - key: postgres-instance
+              operator: In
+              values:
+              - postgres-sample
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  containers:
+  - args:
+    - /usr/local/apps/start_container
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: PGBACKREST_CONFIG
+      value: /etc/pgbackrest/pgbackrest.conf
+    - name: MONITOR_HOSTNAME_WITHOUT_DOMAIN
+      value: postgres-sample-monitor-0
+    - name: BACKUP_STANZA_NAME
+      value: default-postgres-sample
+    - name: PGSSLROOTCERT
+      value: /etc/postgres_ssl/ca.crt
+    - name: PGSSLMODE
+      value: verify-ca
+    - name: VERBOSITY
+      value: -vvv
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - /usr/local/apps/shutdown
+    name: pg-container
+    ports:
+    - containerPort: 5432
+      protocol: TCP
+    readinessProbe:
+      exec:
+        command:
+        - /usr/local/apps/is_ready
+      failureThreshold: 45
+      periodSeconds: 1
+      successThreshold: 2
+      timeoutSeconds: 10
+    resources:
+      limits:
+        cpu: 560m
+        memory: 560Mi
+      requests:
+        cpu: 560m
+        memory: 560Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /etc/dbpass
+      name: secret-volume
+    - mountPath: /etc/pgbackrestpass
+      name: pgbackrest-secret-volume
+    - mountPath: /etc/pgbackrest/
+      name: pgbackrest-config-secret-volume
+    - mountPath: /etc/pgautofailover
+      name: monitor-secret-volume
+    - mountPath: /pgsql
+      name: postgres-sample-pgdata
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /etc/metrics/pass
+      name: metrics-secret-volume
+      readOnly: true
+    - mountPath: /etc/app-user-dbpass
+      name: app-user-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-data-token-b292l
+      readOnly: true
+  - args:
+    - /usr/local/apps/display_logs
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: instance-logging
+    resources:
+      limits:
+        cpu: 56m
+        memory: 56Mi
+      requests:
+        cpu: 56m
+        memory: 56Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-pgdata
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-data-token-b292l
+      readOnly: true
+  - args:
+    - /usr/local/apps/reconfigure_data_instance
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: MONITOR_HOSTNAME_WITHOUT_DOMAIN
+      value: postgres-sample-monitor-0
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: reconfigure-instance
+    resources:
+      limits:
+        cpu: 56m
+        memory: 56Mi
+      requests:
+        cpu: 56m
+        memory: 56Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-pgdata
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /etc/pgautofailover
+      name: monitor-secret-volume
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-data-token-b292l
+      readOnly: true
+  - args:
+    - --web.config.file=/etc/metrics/config/postgres_exporter.config.yml
+    command:
+    - /usr/bin/postgres_exporter
+    env:
+    - name: DATA_SOURCE_URI
+      value: localhost:5432/postgres?sslmode=disable
+    - name: DATA_SOURCE_USER_FILE
+      value: /etc/metrics/pass/username
+    - name: DATA_SOURCE_PASS_FILE
+      value: /etc/metrics/pass/password
+    - name: PG_EXPORTER_AUTO_DISCOVER_DATABASES
+      value: "true"
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: postgres-metrics-exporter
+    ports:
+    - containerPort: 9187
+      name: metrics
+      protocol: TCP
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /etc/metrics/pass
+      name: metrics-secret-volume
+      readOnly: true
+    - mountPath: /etc/metrics/tls
+      name: metrics-tls-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-data-token-b292l
+      readOnly: true
+  - command:
+    - /usr/bin/postgres-sidecar-controller
+    env:
+    - name: PGDATA
+      value: /pgsql/data
+    - name: CURRENT_NAMESPACE
+      value: default
+    - name: BACKUP_STANZA_NAME
+      value: default-postgres-sample
+    - name: CURRENT_INSTANCE_NAME
+      value: postgres-sample
+    - name: PGBACKREST_CONFIG
+      value: /etc/pgbackrest/pgbackrest.conf
+    - name: PGBACKREST_CONFIG_VERSION
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: postgres-sidecar
+    resources:
+      limits:
+        cpu: 128m
+        memory: 128Mi
+      requests:
+        cpu: 128m
+        memory: 128Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /pgsql
+      name: postgres-sample-pgdata
+    - mountPath: /etc/pgbackrest/
+      name: pgbackrest-config-secret-volume
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-data-token-b292l
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  hostname: postgres-sample-0
+  imagePullSecrets:
+  - name: regsecret
+  initContainers:
+  - args:
+    - /usr/local/apps/wait_for_monitor
+    env:
+    - name: MONITOR_HOSTNAME_WITHOUT_DOMAIN
+      value: postgres-sample-monitor-0
+    - name: PGSSLROOTCERT
+      value: /etc/postgres_ssl/ca.crt
+    - name: PGSSLMODE
+      value: verify-ca
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: wait-for-monitor
+    resources:
+      limits:
+        cpu: 800m
+        memory: 800Mi
+      requests:
+        cpu: 800m
+        memory: 800Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /etc/pgautofailover
+      name: monitor-secret-volume
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-data-token-b292l
+      readOnly: true
+  - args:
+    - /usr/local/apps/create_postgres
+    env:
+    - name: BACKUP_STANZA_NAME
+      value: default-postgres-sample
+    - name: MONITOR_HOSTNAME_WITHOUT_DOMAIN
+      value: postgres-sample-monitor-0
+    - name: PGDATA
+      value: /pgsql/data
+    - name: PGSSLROOTCERT
+      value: /etc/postgres_ssl/ca.crt
+    - name: PGSSLMODE
+      value: verify-ca
+    - name: VERBOSITY
+      value: -vvv
+    - name: PATH
+      value: /opt/vmware/postgres/14/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    image: mdrrakiburrahman/postgres-instance:v1.5.0
+    imagePullPolicy: IfNotPresent
+    name: create-postgres
+    resources:
+      limits:
+        cpu: 800m
+        memory: 800Mi
+      requests:
+        cpu: 800m
+        memory: 800Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /etc/dbpass
+      name: secret-volume
+    - mountPath: /etc/pgbackrestpass
+      name: pgbackrest-secret-volume
+    - mountPath: /etc/pgautofailover
+      name: monitor-secret-volume
+    - mountPath: /pgsql
+      name: postgres-sample-pgdata
+    - mountPath: /etc/postgres_ssl
+      name: internal-ssl-secret-volume
+      readOnly: true
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: postgres-sample-data-token-b292l
+      readOnly: true
+  nodeName: microk8s-vm
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    fsGroup: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+    runAsUser: 1001
+    seccompProfile:
+      type: RuntimeDefault
+  serviceAccount: postgres-sample-data
+  serviceAccountName: postgres-sample-data
+  shareProcessNamespace: true
+  subdomain: postgres-sample-agent
+  terminationGracePeriodSeconds: 900
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: postgres-sample-pgdata
+    persistentVolumeClaim:
+      claimName: postgres-sample-pgdata-postgres-sample-0
+  - name: secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-db-secret
+  - name: pgbackrest-secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-pgbackrest-secret
+  - name: pgbackrest-config-secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-empty-secret
+  - name: metrics-secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-metrics-secret
+  - name: metrics-tls-secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-metrics-tls-secret
+  - name: monitor-secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-monitor-secret
+  - name: internal-ssl-secret-volume
+    secret:
+      defaultMode: 256
+      secretName: postgres-sample-internal-ssl-secret
+  - name: app-user-secret-volume
+    secret:
+      defaultMode: 292
+      secretName: postgres-sample-app-user-db-secret
+  - name: postgres-sample-data-token-b292l
+    secret:
+      defaultMode: 420
+      secretName: postgres-sample-data-token-b292l
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:32Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:36Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:36Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2022-02-19T18:11:28Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://d44d8c1969368104af553640c81ea9e38e205990574f4681311415d03637f451
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: instance-logging
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:33Z"
+  - containerID: containerd://6d3af0dfb634228063538ba8dd2d15d127b09f1669f8b1b4da8c9ad9e85d5b70
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: pg-container
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:32Z"
+  - containerID: containerd://f0ee4ff800bf3061e2e9c5690dc5c4b3d91755c1229df9cfa932133f37c71c27
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: postgres-metrics-exporter
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:33Z"
+  - containerID: containerd://fc9426c8f5b49d26aa377f98421ff4606903da801003e59715ebf97a9d074e60
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: postgres-sidecar
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:33Z"
+  - containerID: containerd://0baf21b560f5507155101e6d6b56eba1a5b8894d87e429c8d0fcf98b3966229f
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: reconfigure-instance
+    ready: true
+    restartCount: 0
+    started: true
+    state:
+      running:
+        startedAt: "2022-02-19T18:11:33Z"
+  hostIP: 172.17.106.143
+  initContainerStatuses:
+  - containerID: containerd://81f768a0471add5745f3bd5e9d6e245a0c1bd05349690d66988cc7cef6eea5d3
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: wait-for-monitor
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: containerd://81f768a0471add5745f3bd5e9d6e245a0c1bd05349690d66988cc7cef6eea5d3
+        exitCode: 0
+        finishedAt: "2022-02-19T18:11:30Z"
+        reason: Completed
+        startedAt: "2022-02-19T18:11:30Z"
+  - containerID: containerd://17dc247f45168c8fc44f660f3f7e2b921e93e7c13c4b91201a95426c53195fdf
+    image: docker.io/mdrrakiburrahman/postgres-instance:v1.5.0
+    imageID: docker.io/mdrrakiburrahman/postgres-instance@sha256:7de0c709bc2658ace2ea45900e3148d316bea6164b64d7c01ad9245adc0f15ee
+    lastState: {}
+    name: create-postgres
+    ready: true
+    restartCount: 0
+    state:
+      terminated:
+        containerID: containerd://17dc247f45168c8fc44f660f3f7e2b921e93e7c13c4b91201a95426c53195fdf
+        exitCode: 0
+        finishedAt: "2022-02-19T18:11:32Z"
+        reason: Completed
+        startedAt: "2022-02-19T18:11:30Z"
+  phase: Running
+  podIP: 10.1.254.81
+  podIPs:
+  - ip: 10.1.254.81
+  qosClass: Guaranteed
+  startTime: "2022-02-19T18:11:28Z"

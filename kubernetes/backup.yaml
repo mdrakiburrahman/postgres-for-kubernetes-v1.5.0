@@ -1,0 +1,8 @@
+apiVersion: sql.tanzu.vmware.com/v1
+kind: PostgresBackup
+metadata:
+  name: minio-backup
+spec:
+  sourceInstance:
+    name: postgres-sample
+  type: full
