@@ -8,6 +8,8 @@
     - [x]  Log into FSM during HA to understand state machine
     - [x]  See what code can be salvaged 
 
+> Script from experimentation in `scripts/deploy.ps1`
+
 ---
 
 # Hands-on with Tanzu SQL
