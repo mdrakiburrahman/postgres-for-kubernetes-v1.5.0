@@ -1769,6 +1769,6 @@ READINESS PROBES:
 
 ![Untitled](_images/Untitled%2019.png)
 
-So I’m willing to bet the Operator makes a gRPC call to these sidecars when necessary to run the appropriate Shell command - smart!
+So I’m willing to bet the Operator makes a gRPC call to these sidecar binaries (which must be in Golang, since C doesn't have gRPC support) when necessary to run the appropriate Shell command inline - smart!
 
 ---
