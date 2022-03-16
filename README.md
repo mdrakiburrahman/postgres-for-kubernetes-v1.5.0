@@ -405,6 +405,8 @@ All the real logic for controlling Postgres
 
 ![Untitled](_images/Untitled%2011.png)
 
+## Shell wrappers for `pg_auto_failover`
+
 So for example, let’s look at `create_monitor` and `create_postgres.`
 
 I think this is what is creating the `monitor` pod:
